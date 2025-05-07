@@ -12,6 +12,12 @@ export interface Owner {
     name: string;
     surname: string;
   }
+export enum Visibility{
+  EVERYONE = 'EVERYONE',
+  FRIENDS = 'FRIENDS',
+  GROUP = 'GROUP',
+}
+
 export interface Group {
     id: number;
     type: string;

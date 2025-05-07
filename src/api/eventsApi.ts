@@ -1,15 +1,17 @@
 import { getCurrentUserId } from '../utils/jwt'; 
 import EventsPage from '../pages/EventsPage'
-import { Owner, Group } from '../types';
+import { Owner, Group, Visibility } from '../types';
 
 // Типы для TypeScript
 export type OwnerType = 'USER' | 'GROUP';
+
 
 export interface EventResponse {
   id: number;
   ownerId: number;
   ownerType: OwnerType;
   title: string;
+  visibility: Visibility;
   description: string | null;
   time: string;
   date: string;
@@ -70,7 +72,25 @@ const eventApi = {
       console.error('Error fetching owner info:', error);
       throw error; // Важно пробросить ошибку дальше
     }
-  }
+  },
+//для пользователя
+  getOwnerEvents: async (): Promise<EventResponse[]> => {
+    try {
+      const ownerId = getCurrentUserId(); // Получаем ID из токена
+      const ownerType = "USER"
+      const response = await fetch(`${API_BASE_URL}/events/${ownerType}/${ownerId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.json()
+    } catch (error) {
+      console.error('Error fetching user events:', error);
+      throw error;
+    }
+  },
 
 
 
@@ -94,28 +114,44 @@ const eventApi = {
 //   /**
 //    * Создает новое мероприятие
 //    */
-//   createEvent: async (eventData: {
-//     title: string;
-//     description?: string;
-//     visibility: Visibility;
-//     time: string;
-//     date: string;
-//     ownerType: OwnerType;
-//     ownerId?: number;
-//   }): Promise<EventResponse> => {
-//     try {
-//       const response = await axios.post(`${API_BASE_URL}/events`, eventData, {
-//         headers: {
-//           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-//           'Content-Type': 'application/json'
-//         }
-//       });
-//       return response.data;
-//     } catch (error) {
-//       console.error('Error creating event:', error);
-//       throw error;
-//     }
-//   },
+createEvent: async (eventData: {
+  title: string;
+  description?: string;
+  visibility: Visibility;
+  time: string;
+  date: string;
+}): Promise<EventResponse> => {
+  try {
+    const ownerId = getCurrentUserId(); // Получаем id текущего пользователя
+    const ownerType = 'USER'; // Устанавливаем ownerType как 'USER'
+    
+    const payload = {
+      ...eventData,
+      ownerId,
+      ownerType
+    };
+
+    const response = await fetch(`${API_BASE_URL}/events`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create event');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error creating event:', error);
+    throw error;
+  }
+},
+
 
 //   /**
 //    * Обновляет мероприятие
